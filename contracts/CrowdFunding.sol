@@ -120,4 +120,53 @@ function refund(uint256 _campaignId)
     emit Refunded(_campaignId, msg.sender, donated);
 }
 
+function getCampaign(uint256 _campaignId)
+    public
+    view
+    campaignExists(_campaignId)
+    returns (
+        address creator,
+        string memory title,
+        string memory description,
+        uint256 targetAmount,
+        uint256 deadline,
+        uint256 amountCollected,
+        bool isClosed
+    )
+{
+    Campaign storage c = campaigns[_campaignId];
+    return (
+        c.creator,
+        c.title,
+        c.description,
+        c.targetAmount,
+        c.deadline,
+        c.amountCollected,
+        c.isClosed
+    );
+}
+
+function getAllCampaigns()
+    public
+    view
+    returns (Campaign[] memory)
+{
+    Campaign[] memory allCampaigns = new Campaign[](numberOfCampaigns);
+
+    for (uint256 i = 0; i < numberOfCampaigns; i++) {
+        allCampaigns[i] = campaigns[i];
+    }
+
+    return allCampaigns;
+}
+
+function getDonation(uint256 _campaignId, address _donor)
+    public
+    view
+    campaignExists(_campaignId)
+    returns (uint256)
+{
+    return donations[_campaignId][_donor];
+}
+
 }
