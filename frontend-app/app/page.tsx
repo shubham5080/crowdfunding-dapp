@@ -16,12 +16,16 @@ export default function Home() {
   const [status, setStatus] = useState("Wallet not connected");
   const [network, setNetwork] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState("");
   const [deadline, setDeadline] = useState("");
 
-  /* ---------------- CONNECT WALLET ---------------- */
+  /* ---------------- WALLET ---------------- */
+
   async function connectWallet() {
     if (!window.ethereum) {
       setStatus("MetaMask not installed");
@@ -45,153 +49,245 @@ export default function Home() {
 
     setWallet(accounts[0]);
     setStatus("Wallet connected");
-
     await loadCampaigns();
   }
 
-  /* ---------------- LOAD CAMPAIGNS ---------------- */
+  /* ---------------- CONTRACT ---------------- */
+
+  async function getContract() {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  }
+
+  /* ---------------- LOAD ---------------- */
+
   async function loadCampaigns() {
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
+      const contract = await getContract();
       const data = await contract.getAllCampaigns();
       setCampaigns(data);
-      setStatus("Campaigns loaded");
-    } catch (err: any) {
-      setStatus("Error loading campaigns: " + err.message);
+    } catch {
+      setError("Failed to load campaigns");
     }
   }
 
-  /* ---------------- CREATE CAMPAIGN ---------------- */
+  /* ---------------- CREATE ---------------- */
+
   async function createCampaign() {
     if (!wallet) return;
 
     if (!title || !description || !target || !deadline) {
-      setStatus("Fill all fields");
+      setError("Fill all fields");
       return;
     }
 
-    const deadlineTs = Math.floor(
-      new Date(deadline).getTime() / 1000
-    );
+    try {
+      setLoading(true);
+      setError(null);
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      signer
-    );
+      const deadlineTs = Math.floor(
+        new Date(deadline).getTime() / 1000
+      );
 
-    const tx = await contract.createCampaign(
-      title,
-      description,
-      ethers.parseEther(target),
-      deadlineTs
-    );
+      const contract = await getContract();
+      const tx = await contract.createCampaign(
+        title,
+        description,
+        ethers.parseEther(target),
+        deadlineTs
+      );
 
-    await tx.wait();
+      await tx.wait();
 
-    setTitle("");
-    setDescription("");
-    setTarget("");
-    setDeadline("");
-    setStatus("Campaign created");
+      setTitle("");
+      setDescription("");
+      setTarget("");
+      setDeadline("");
+      setStatus("Campaign created");
 
-    await loadCampaigns();
+      await loadCampaigns();
+    } catch {
+      setError("Create campaign failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---------------- DONATE ---------------- */
+
+  async function donate(id: number, amount: string) {
+    if (!amount) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const contract = await getContract();
+      const tx = await contract.donateToCampaign(id, {
+        value: ethers.parseEther(amount),
+      });
+
+      await tx.wait();
+      await loadCampaigns();
+    } catch {
+      setError("Donation failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---------------- WITHDRAW ---------------- */
+
+  async function withdrawFunds(id: number) {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const contract = await getContract();
+      const tx = await contract.withdrawFunds(id);
+
+      await tx.wait();
+      await loadCampaigns();
+    } catch {
+      setError("Withdraw failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---------------- REFUND ---------------- */
+
+  async function refund(id: number) {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const contract = await getContract();
+      const tx = await contract.refund(id);
+
+      await tx.wait();
+      await loadCampaigns();
+    } catch {
+      setError("Refund failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* ---------------- UI ---------------- */
+
   return (
-    <main style={{ padding: 20 }}>
+    <main
+      style={{
+        padding: 20,
+        maxWidth: 900,
+        margin: "auto",
+        fontFamily: "sans-serif",
+      }}
+    >
       <h1>Crowdfunding DApp</h1>
 
       <p><b>Status:</b> {status}</p>
       <p><b>Network:</b> {network}</p>
 
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p style={{ color: "blue" }}>Transaction in progress...</p>}
+
       {!wallet && (
-        <button onClick={connectWallet}>Connect Wallet</button>
+        <button onClick={connectWallet}>
+          Connect Wallet
+        </button>
       )}
 
       {wallet && (
-        <div style={{ marginTop: 20 }}>
+        <>
+          <hr />
           <h2>Create Campaign</h2>
 
-          <input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-
+          <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
           <br />
 
-          <textarea
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
+          <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
           <br />
 
-          <input
-            placeholder="Target (ETH)"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-          />
-
+          <input placeholder="Target (ETH)" value={target} onChange={e => setTarget(e.target.value)} />
           <br />
 
-          <input
-            type="datetime-local"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
-
+          <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} />
           <br />
 
-          <button onClick={createCampaign}>Create Campaign</button>
-        </div>
+          <button onClick={createCampaign} disabled={loading}>
+            {loading ? "Creating..." : "Create Campaign"}
+          </button>
+        </>
       )}
 
       <hr />
-
       <h2>Campaigns</h2>
 
-      {campaigns.map((c, i) => (
-        <div
-          key={i}
-          style={{
-            border: "1px solid #ccc",
-            padding: 10,
-            marginBottom: 10,
-          }}
-        >
-          <h3>{c[1]}</h3> {/* title */}
-          <p>{c[2]}</p>   {/* description */}
+      {campaigns.map((c, i) => {
+        const creator = c[0];
+        const title = c[1];
+        const description = c[2];
+        const targetAmount = c[3];
+        const deadlineTs = c[4];
+        const collected = c[5];
+        const isClosed = c[6];
 
-          <p>
-            <b>Target:</b>{" "}
-            {ethers.formatEther(c[3])} ETH
-          </p>
+        const isOwner =
+          wallet && wallet.toLowerCase() === creator.toLowerCase();
+        const isExpired = Number(deadlineTs) * 1000 < Date.now();
 
-          <p>
-            <b>Raised:</b>{" "}
-            {ethers.formatEther(c[5])} ETH
-          </p>
+        return (
+          <div
+            key={i}
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              padding: 16,
+              marginBottom: 16,
+              background: "#fafafa",
+            }}
+          >
+            <h3>{title}</h3>
+            <p>{description}</p>
 
-          <p>
-            <b>Deadline:</b>{" "}
-            {new Date(Number(c[4]) * 1000).toLocaleString()}
-          </p>
-        </div>
-      ))}
+            <p><b>Target:</b> {ethers.formatEther(targetAmount)} ETH</p>
+            <p><b>Raised:</b> {ethers.formatEther(collected)} ETH</p>
+            <p><b>Status:</b> {isClosed ? "Closed" : "Active"}</p>
+
+            {!isClosed && !isExpired && (
+              <>
+                <input id={`donate-${i}`} placeholder="ETH amount" />
+                <button
+                  disabled={loading}
+                  onClick={() =>
+                    donate(
+                      i,
+                      (document.getElementById(`donate-${i}`) as HTMLInputElement).value
+                    )
+                  }
+                >
+                  Donate
+                </button>
+              </>
+            )}
+
+            {isOwner && isExpired && !isClosed && (
+              <button disabled={loading} onClick={() => withdrawFunds(i)}>
+                Withdraw
+              </button>
+            )}
+
+            {!isOwner && isExpired && collected < targetAmount && (
+              <button disabled={loading} onClick={() => refund(i)}>
+                Refund
+              </button>
+            )}
+          </div>
+        );
+      })}
     </main>
   );
 }
