@@ -114,6 +114,34 @@ npm run dev
 
 Open `http://localhost:3000` in your browser.
 
+## Sepolia Testnet Deployment
+
+The contract is deployed on Sepolia testnet:
+
+**Contract Address**: `0xAff0367646b6cCC707057e4e32d83daF8C0c0772`
+
+### Deploying to Sepolia
+
+1. **Get Sepolia ETH** from [Sepolia Faucet](https://sepoliafaucet.com/)
+
+2. **Create `.env` file** in the root directory:
+```bash
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+```
+
+3. **Deploy**:
+```bash
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+4. **Update frontend** `.env.local`:
+```bash
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xAff0367646b6cCC707057e4e32d83daF8C0c0772
+```
+
+5. **Switch MetaMask to Sepolia** network and test!
+
 ## Testing
 
 Run the test suite:
