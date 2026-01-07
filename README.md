@@ -3,6 +3,7 @@
 A decentralized crowdfunding platform built with Solidity, Hardhat, Next.js, and ethers.js.
 
 ## Features
+
 - Create fundraising campaigns
 - Donate ETH to campaigns
 - Deadline-based fund locking
@@ -11,6 +12,7 @@ A decentralized crowdfunding platform built with Solidity, Hardhat, Next.js, and
 - Fully decentralized & trustless
 
 ## Tech Stack
+
 - **Solidity** (^0.8.x)
 - **Hardhat** - Development environment & testing
 - **ethers.js** (v6) - Ethereum library
@@ -22,6 +24,7 @@ A decentralized crowdfunding platform built with Solidity, Hardhat, Next.js, and
 ## Project Architecture
 
 ### High-level Flow
+
 ```
 User (Browser)
    ↓
@@ -35,6 +38,7 @@ Ethereum (Hardhat / Testnet)
 ```
 
 ### Responsibilities
+
 - **Frontend**: UI, validation, wallet UX
 - **MetaMask**: Signing + user consent
 - **Smart Contract**: Funds, rules, trust
@@ -51,6 +55,7 @@ This separation is clean and interview-grade.
 - Events emitted for indexing
 
 ### Key Functions
+
 - `createCampaign()` - Create a new fundraising campaign
 - `donateToCampaign()` - Donate ETH to a campaign
 - `withdrawFunds()` - Creator withdraws funds if target reached
@@ -70,17 +75,20 @@ This separation is clean and interview-grade.
 ## Running Locally
 
 ### Prerequisites
+
 - Node.js (v18+)
 - npm or yarn
 - MetaMask browser extension
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 cd frontend-app && npm install
 ```
 
 ### 2. Start Hardhat Node
+
 ```bash
 npx hardhat node
 ```
@@ -88,7 +96,9 @@ npx hardhat node
 This starts a local Ethereum node on `http://localhost:8545` with 20 test accounts pre-funded with ETH.
 
 ### 3. Deploy Contract
+
 In a new terminal:
+
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
@@ -96,17 +106,21 @@ npx hardhat run scripts/deploy.js --network localhost
 Copy the deployed contract address and update it in `frontend-app/config.js`.
 
 ### 4. Configure MetaMask
+
 - **Network Name**: Hardhat Local
 - **RPC URL**: `http://127.0.0.1:8545`
 - **Chain ID**: `31337`
 - **Currency Symbol**: ETH
 
 ### 5. Import Test Account
+
 Import one of the Hardhat test accounts into MetaMask:
+
 - **Account #0**: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 - **Account #1**: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
 
 ### 6. Start Frontend
+
 ```bash
 cd frontend-app
 npm run dev
@@ -125,17 +139,20 @@ The contract is deployed on Sepolia testnet:
 1. **Get Sepolia ETH** from [Sepolia Faucet](https://sepoliafaucet.com/)
 
 2. **Create `.env` file** in the root directory:
+
 ```bash
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
 PRIVATE_KEY=0xYOUR_PRIVATE_KEY
 ```
 
 3. **Deploy**:
+
 ```bash
 npx hardhat run scripts/deploy.js --network sepolia
 ```
 
 4. **Update frontend** `.env.local`:
+
 ```bash
 NEXT_PUBLIC_CONTRACT_ADDRESS=0xAff0367646b6cCC707057e4e32d83daF8C0c0772
 ```
@@ -145,11 +162,13 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=0xAff0367646b6cCC707057e4e32d83daF8C0c0772
 ## Testing
 
 Run the test suite:
+
 ```bash
 npx hardhat test
 ```
 
 Test coverage includes:
+
 - Campaign creation
 - Donations
 - Withdrawals
